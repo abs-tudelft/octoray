@@ -1,10 +1,10 @@
 ## Build instructions
 
-1. Install the required python libraries:
+1. Install the required python libraries and source xrt for alveo cards:
 
-```pip3 install numpy bitstring cffi ```
+```pip3 install -r requirements.txt```
 
-```pip3 install pynq jupyter "dask[complete]" bokeh matplotlib```
+```source /opt/xilinx/xrt/setup.sh```
 
 2. Run the Dask scheduler using:
 
@@ -22,7 +22,7 @@ for i in Device.devices:
 ```
 Default values:
 ```
-XCLBIN_PATH = a.xclbin
+XCLBIN_PATH = a_u50.xclbin
 DEVICE_NAME = xilinx_u50_gen3x16_xdma_201920_3
 ```
 
