@@ -6,7 +6,8 @@ In this repo, we demonstrate 2 examples of using Dask (https://github.com/dask/d
 ## General architecture:
 
 
-![Overview](images/architecture-1.png)
+![Overview](images/OctoRay_schematic.png)
+
 The idea is based on the principle of data parallelism. It works by splitting the input data payload into as many chunks as the number of available FPGAs and performing the computation in parallel. The results are then combined into a single output object.
 
 
