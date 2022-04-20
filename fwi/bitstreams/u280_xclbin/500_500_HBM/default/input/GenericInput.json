@@ -1,0 +1,48 @@
+{
+    "c_0": 2000.0,
+    "Freq": {
+        "min": 10.0,
+        "max": 40.0,
+        "nTotal": 5
+    },
+    "reservoirTopLeft": {
+        "x": -300.0,
+        "z": 0.0
+    },
+    "reservoirBottomRight": {
+        "x": 300.0,
+        "z": 300.0
+    },
+    "sourcesTopLeft": {
+        "x": -480.0,
+        "z": -5.0
+    },
+    "sourcesBottomRight": {
+        "x": 480.0,
+        "z": -5.0
+    },
+    "receiversTopLeft": {
+        "x": -480.0,
+        "z": -5.0
+    },
+    "receiversBottomRight": {
+        "x": 480.0,
+        "z": -5.0
+    },
+    "nSources": 10,
+    "nReceivers": 10,
+    "ngrid_original": {
+        "x": 50,
+        "z": 10
+    },
+    "ngrid": {
+        "x": 50,
+        "z": 10
+    },
+    "verbosity": false,
+    "fileName": "10x10_100",
+    "forward": "FiniteDifference",
+    "inversion": "ConjugateGradient",
+    "threads": 1
+}
+
