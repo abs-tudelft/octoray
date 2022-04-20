@@ -131,6 +131,8 @@ def start_my_worker(
         "{python} -m {remote_dask_worker} "
         "{scheduler_addr}:{scheduler_port} "
         "--preload pynqimport.py "
+        "--no-nanny "
+        "-- memory-limit 0 "
         "--nthreads {nthreads}" + (" --nworkers {n_workers}" if n_workers != 1 else "")
     )
 

@@ -12,7 +12,7 @@ from MySSHCluster import MySSHCluster
 
     
 class Octoray():
-    def __init__(self, ssh_cluster=False, scheduler="10.1.212.126",scheduler_port="8786",hosts=["10.1.212.129"]):
+    def __init__(self, ssh_cluster=False, scheduler="10.1.212.126",scheduler_port="8786",hosts=[]):
         #TODO: add list of ip address for workers so we can automatically spawn workers.
         #TODO: add config file for ssh configurations
         self.kernels = []
@@ -48,8 +48,7 @@ class Octoray():
         while len(self.client.scheduler_info()["workers"]) != len(self.kernels):
             time.sleep(0.1)
             if time.time() > timeout:
-                print("Time out... exiting")
-                return
+                raise TimeoutError("Timed out after 15 seconds... exiting")
         
         self.num_of_workers = len(self.client.scheduler_info()["workers"])
         print(f"Current amount of workers: {self.num_of_workers}")
@@ -67,6 +66,11 @@ class Octoray():
         """Kernels that are added will be executed on available workers."""
         for i in kernels:
             self.kernels.append(i)    
+        #check that we only process the amount of kernels as workers that we have.  
+        if len(self.hosts) == 0:
+            raise ValueError("There are no hosts available, please add at least one host.")
+        elif len(kernels)>len(self.hosts):
+            raise ValueError(f"There are more kernels ({len(kernels)}) added to Octoray than hosts ({len(self.hosts)}) available, Add more hosts or remove the excessive kernels...")
         
         #create worker objects
         self.workers = []
@@ -125,13 +129,7 @@ class Octoray():
             print("\n")
             
     def split_data_and_kernels(self, dataset:list,kernels):
-        #check that we only process the amount of kernels as workers that we have.
-        if len(self.hosts) == 0:
-            print("There are no hosts available, please add at least one host.")
-            return -1
-        elif len(kernels)>len(self.hosts):
-            print(f"There are more kernels ({len(kernels)}) added to Octoray than hosts ({len(self.hosts)}) available, Add more hosts or remove the excessive kernels...")
-            return -1
+        
         self.data_split = []
         start = 0
         for krnl in kernels:
