@@ -1,0 +1,7 @@
+{
+    "scheduler":"10.1.212.126",
+    "hosts":["10.1.212.126","10.1.212.127"],
+    "connect_options":{"port":22,"xrt":"/opt/xilinx/xrt/setup.sh","dir":"/mnt/scratch/ldierick/octoray/fwi"},
+    "worker_options":{"nthreads":1,"n_workers":1,"preload":"pynqimport.py","nanny":"0"},
+    "scheduler_options":{"port":8786}
+}
