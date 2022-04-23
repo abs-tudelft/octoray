@@ -2,156 +2,241 @@ import json
 import numpy as np
 import asyncssh
 import dask
-from dask.distributed import Client, progress, get_worker
+from dask.distributed import Client, progress
+from SSHCluster import OctoSSHCluster
 import os
 import time
 import copy
 
-from multiprocessing import Process
-from MySSHCluster import MySSHCluster
+import subprocess
 
     
 class Octoray():
-    def __init__(self, ssh_cluster=False, scheduler="10.1.212.126",scheduler_port="8786",hosts=[]):
-        #TODO: add list of ip address for workers so we can automatically spawn workers.
-        #TODO: add config file for ssh configurations
-        self.kernels = []
+    def __init__(self, ssh_cluster=False, scheduler=None,scheduler_port=None,hosts=None,config_file=None):
+        self.kernels = []        
+        
+        if config_file:
+            with open(config_file) as f:
+                self.config = json.load(f)
+            self.scheduler = self.config["scheduler"]
+            self.hosts = self.config["hosts"]    
+            self.scheduler_port = self.config["scheduler_options"]["port"]
+        else:
+            self.scheduler = scheduler
+            self.scheduler_port = scheduler_port
+            self.hosts = hosts
+            
         self.ssh_cluster = ssh_cluster
-        self.scheduler = scheduler
-        self.scheduler_port = scheduler_port
-        self.hosts = hosts
+        self.setup_hosts = []
+        self.worker_options = []
+        
 
+        
     def create_cluster(self):
-        print(f"Initializing OctoRay with client ip: {self.scheduler}")  
+        """Create the SSH cluster with a Scheduler and Worker(s). """
+        
+        self.check_hosts()
+        self.check_kernels()
+        
+        print(f"Initializing OctoRay with client ip: {self.scheduler}")
+        
         self.cluster = f"tcp://{self.scheduler}:{self.scheduler_port}"
         if self.ssh_cluster:
-            dask.config.set({"distributed.worker.daemon":False})
-            self.cluster = self.cluster = MySSHCluster(scheduler_addr=self.scheduler,scheduler_port=self.scheduler_port,workers=self.workers,
-                                                        nthreads=1,
-                                                        ssh_username=None,
-                                                        ssh_port=22,
-                                                        ssh_private_key=None,
-                                                        nohost=False, 
-                                                        logdir=None,
-                                                        remote_python=None,
-                                                        memory_limit=None,
-                                                        worker_port=0,
-                                                        nanny_port=0,
-                                                        remote_dask_worker="distributed.cli.dask_worker",
-                                                        local_directory=None
-                                                    )
-        
+            print(self.worker_options)
+            print(len(self.worker_options))
+            print([self.scheduler,*self.hosts])
+            #Dask takes the first member in the hosts list as the scheduler so we add it here.            
+            self.cluster = OctoSSHCluster(hosts=[self.scheduler,*self.hosts],
+                                      connect_options=self.config["connect_options"],
+                                      worker_options=self.worker_options,
+                                      worker_class=self.config["worker_class"],
+                                      scheduler_options=self.config["scheduler_options"]
+                                     )
+
         self.client = Client(self.cluster)
         print("Waiting until workers are set up on remote machines...")
-      
+        
         timeout = time.time() + 15
-        while len(self.client.scheduler_info()["workers"]) != len(self.kernels):
+        while len(self.client.scheduler_info()["workers"]) < len(self.hosts):
             time.sleep(0.1)
             if time.time() > timeout:
                 raise TimeoutError("Timed out after 15 seconds... exiting")
         
         self.num_of_workers = len(self.client.scheduler_info()["workers"])
+        
         print(f"Current amount of workers: {self.num_of_workers}")
         
-            
-    def close_cluster(self):
-#         self.p.terminate()
-#         if self.ssh_cluster:
-#             self.cluster.shutdown()
-#             self.close_workers()
-        self.client.close()
-        print("killed cluster and client")
+    def setup_worker_options(self):
+        self.worker_options = [self.config["worker_options"]] * len(self.hosts)
+                
+        
+    def shutdown(self):
+        try:
+            if self.ssh_cluster:
+                self.cluster.close()
+            self.client.close()
+        except Exception as e:
+            raise e
 
     def setup_cluster(self,data, *kernels):
         """Kernels that are added will be executed on available workers."""
-        for i in kernels:
-            self.kernels.append(i)    
-        #check that we only process the amount of kernels as workers that we have.  
-        if len(self.hosts) == 0:
-            raise ValueError("There are no hosts available, please add at least one host.")
-        elif len(kernels)>len(self.hosts):
-            raise ValueError(f"There are more kernels ({len(kernels)}) added to Octoray than hosts ({len(self.hosts)}) available, Add more hosts or remove the excessive kernels...")
         
-        #create worker objects
-        self.workers = []
-        for i, krnl in enumerate(self.kernels):
-            worker = {"addr": self.hosts[i],
-                      "n_workers":1, #krnl["no_instances"]
-                     }
-            self.workers.append(worker)
-            
-        data_split, kernels_split = self.split_data_and_kernels(data,self.kernels)
+        self.check_hosts()
+        
+        #Assign a host to the kernels
+        for i, h in enumerate(self.hosts):
+            kernels[i]["host"] = h
+            self.kernels.append(kernels[i])
+
+        self.check_kernels()
+        
+        self.setup_worker_options()
+        
+        kernels_split = self.split_kernels(self.kernels)
+        data_split = self.split_data(data,kernels_split) 
         
         #create the cluster
         self.create_cluster()
         
         return data_split, kernels_split
     
-    def execute_function(self,func,data_split,kernels_split):
-        d_data = self.client.scatter(data_split)
-        d_kernels = self.client.scatter(kernels_split)
-        futures = self.client.map(func,d_data,d_kernels,range(len(self.client.scheduler_info()["workers"])))
+    def execute(self,func,*args):
+        """Example of an execute function with a single CU"""
+        distributed_arguments = []
+        for arg in args:
+            distributed_arguments.append(self.client.scatter(arg))
+            
+        futures = self.client.map(func,*distributed_arguments)
         res = self.client.gather(futures)
+        return res
+    
+    def execute_hybrid(self,setup_func, func,*args, **kwargs):
+        """Example of an execute function with multiple CU's"""        
+        f = []
+        
+        for i in range(len(self.setup_hosts)):
+            f.append(self.client.submit(setup_func,priority=10,workers=self.setup_hosts[i]))
+      
+        print(self.client.gather(*f))
+#         distributed_args = []
+#         for i,arg in enumerate(args):
+#             print(args)
+#             distributed_args.append(arg[i])
+#         futures = []
+        for i in range(len(self.hosts)):
+            for j in range(len(self.kernels)):
+            
+        for i,item in enumerate(self.kernels):
+            if isinstance(item,dict):
+                kernel_args = args[i%len(args)][i+1%len(args)]
+                futures.append(self.client.submit(func,*kernel_args[0],i,workers=item["host"]))
+            elif isinstance(item,list):
+                for x, cu in enumerate(item):
+                    futures.append(self.client.submit(func,args[i],i,workers=cu["host"]))
+                    
+        #TODO we need to group the kernels to a host
+#         futures = self.client.map(func,*distributed_arguments,workers=[i["host"] for i in self.kernels])
+        res = self.client.gather(*futures)
         return res
             
             
-    async def close_workers(self):
-        #TODO: EXPERIMENTAL FUNCTION shuts down kernel as well
-        for h in self.hosts:
+    async def fshutdown(self):
+        """WARNING: this functions forcefully kills processes on the scheduler port on each host machine.
+        only use this function if your SSH Server does not support the "signal" channel request."""
+        temp = [self.scheduler,*self.hosts]
+        for h in temp[::-1]: 
             async with asyncssh.connect(h,22) as conn:
-                res = await conn.run("lsof -n -i | grep 8786 | awk '{system(\"kill \" $2)}'",check=True)
+#                 res = await conn.run("lsof -n -i | grep "+str(self.scheduler_port) +" | awk '{system(\"kill \" $2)}'",check=True)
+                res = await conn.run("pgrep -f dask | xargs kill",check=True)
                 print(res.stdout,end='')
 
     def create_kernel(self, path:str, no_instances:int=1, batch_size:int=0, func_specs:list=[],config=None):
         """Creates a dictionary that represents a kernel.
         @param path: The path to the bitsream
         @param no_instances: If there are copied instances (default = 1)
+        @param compute_unit: The id of the compute unit, this is 1 or configured based on no_instances.
         @param batch_size: The amount of data each compute unit should process.
         @param func_specs: The functions inside the kernel with their memory specifications
             A functions square_numbers(double a, double b) where a is mapped to HBM0 and b to HBM1
             is represented as: [{"square_numbers":[HBM0,HBM1]}]
+        @param host: We assign each kernel to a host
         @param config: If necessary a configuration file or variable can be added.
         """ 
         kernel = {
             "path_to_kernel":path,
             "no_instances":no_instances,
+            "compute_unit":1,
             "batch_size":batch_size,
-            "functions":func_specs
+            "functions":func_specs,
+            "host":None,
             }    
         if config:
             kernel["config"]=config
             
         return kernel
 
-    def print_kernels(self,kernels):
-        for i in kernels:
-            print(i)
-            print("\n")
-            
-    def split_data_and_kernels(self, dataset:list,kernels):
-        
-        self.data_split = []
-        start = 0
-        for krnl in kernels:
-            krnl_set = []
-            for i in range(krnl["no_instances"]):
-                krnl_set.append(dataset[start:start+krnl["batch_size"]])
-                start += krnl["batch_size"]
-            self.data_split.append(krnl_set)
-        return self.data_split, kernels            
     
+    def split_data(self,dataset,kernels):
+        """Split the dataset based on the amount of kernels, the number of instances and the batchsize."""
+        start = 0
+        self.data_split = []
+        
+        for krnl in kernels:
+            if isinstance(krnl,list):
+                group = []
+                for cu in krnl:
+                    group.append(dataset[start:start+cu["batch_size"]])
+                    start += cu["batch_size"]
+                self.data_split.append(group)
+            else:
+                self.data_split.append(dataset[start:start+krnl["batch_size"]])
+                start += krnl["batch_size"]
+                    
+        return self.data_split            
     
     def split_kernels(self,kernels):
-        #TODO: separate kernels can't program device, maybe use this code for multidevice on 1 host.
-        #create a separate kernel for each instance
-        for i, krnl in enumerate(kernels):
+        """Create a separate kernel for each instance"""
+        self.setup_hosts = []
+
+        # Need to use slice operator to copy kernels so the insert doesn't mess up the lazy loop iterator.
+        for i, krnl in enumerate(kernels[:]):
             if krnl["no_instances"]>1:
-                for t in range(krnl["no_instances"]-1):
+                group = []
+                # Add hosts that need need to be setup for multiple compute units.
+                if krnl["host"] not in self.setup_hosts:
+                    self.setup_hosts.append(krnl["host"])
+                
+                # Increase a hosts amount of workers to the number of compute unit instances in the bitstream.
+                self.worker_options[i]["n_workers"]=krnl["no_instances"]
+                
+                # Unpack and group a multiple compute unit kernel
+                for t in range(krnl["no_instances"]):
                     new_kernel = copy.deepcopy(krnl) #need to deepcopy so we don't overwrite functions
                     new_kernel["no_instances"]=1
-                    new_kernel["functions"]= krnl["functions"][t+1]
-                    kernels.insert(i+1,new_kernel)
-                krnl["functions"] = krnl["functions"][0]
-                krnl["no_instances"] = 1
+                    new_kernel["compute_unit"]=t+1
+                    new_kernel["functions"]= krnl["functions"][t]
+                    group.append(new_kernel)
+                kernels[i] = group
+                continue
+            krnl["functions"] = krnl["functions"][0]
+            krnl["no_instances"] = 1
+            
+        self.kernels = kernels
+        return self.kernels
+    
+    def check_hosts(self):
+        """Make sure each kernel is assigned to a valid host"""
+        if len(self.hosts) == 0:
+            raise ValueError("There are no hosts available, please add at least one host.")
+    def check_kernels(self):
+        for krnl in self.kernels:
+            check = None
+            if isinstance(krnl,dict):
+                check = krnl["host"]
+            elif isinstance(krnl,list):
+                check = krnl[0]["host"] 
+            if check not in self.hosts:
+                raise ValueError(f"There is no valid host assigned to kernel {krnl}. Make sure the amount of hosts and kernels added to Octoray match.")
+        
 if __name__ == "__main__":
     octo = Octoray()
