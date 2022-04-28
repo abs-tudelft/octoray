@@ -110,33 +110,32 @@ class Octoray():
         res = self.client.gather(futures)
         return res
     
-    def execute_hybrid(self,setup_func, func,*args, **kwargs):
+    def execute_hybrid(self,setup_func, func,data,kernels,*args, **kwargs):
         """Example of an execute function with multiple CU's"""        
         f = []
         
-        for i in range(len(self.setup_hosts)):
-            f.append(self.client.submit(setup_func,priority=10,workers=self.setup_hosts[i]))
+#         for i in range(len(self.setup_hosts)):
+#             f.append(self.client.submit(setup_func,priority=10,workers=self.setup_hosts[i]))
       
-        print(self.client.gather(*f))
-#         distributed_args = []
-#         for i,arg in enumerate(args):
-#             print(args)
-#             distributed_args.append(arg[i])
-#         futures = []
-        for i in range(len(self.hosts)):
-            for j in range(len(self.kernels)):
-            
-        for i,item in enumerate(self.kernels):
-            if isinstance(item,dict):
-                kernel_args = args[i%len(args)][i+1%len(args)]
-                futures.append(self.client.submit(func,*kernel_args[0],i,workers=item["host"]))
-            elif isinstance(item,list):
-                for x, cu in enumerate(item):
-                    futures.append(self.client.submit(func,args[i],i,workers=cu["host"]))
-                    
-        #TODO we need to group the kernels to a host
-#         futures = self.client.map(func,*distributed_arguments,workers=[i["host"] for i in self.kernels])
-        res = self.client.gather(*futures)
+#         print(self.client.gather(f))
+        
+        if len(data) != len(kernels):
+            raise ValueError("data and kernels don't have same dimensions.")
+        futures = []
+        index = 0
+        for i,krnl in enumerate(kernels):
+            if isinstance(krnl,dict):
+                print(index+1)
+                futures.append(self.client.submit(func,data[i],krnl,index+1,workers=krnl["host"]))
+                index+=1
+            elif isinstance(krnl,list):
+                for j,k in enumerate(krnl):
+                    print(index+j+1)
+                    futures.append(self.client.submit(func,data[i][j],k,index+j+1,workers=k["host"]))
+                index += len(krnl)
+        
+        print(f"len futures: {len(futures)}")
+        res = self.client.gather(futures)
         return res
             
             
