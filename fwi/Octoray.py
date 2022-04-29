@@ -12,39 +12,41 @@ import subprocess
 
     
 class Octoray():
-    def __init__(self, ssh_cluster=False, scheduler=None,scheduler_port=None,hosts=None,config_file=None):
+    def __init__(self, ssh_cluster=False, config_file=None):
         self.kernels = []        
-        
         if config_file:
-            with open(config_file) as f:
-                self.config = json.load(f)
+            if isinstance(config_file,str):
+                with open(config_file) as f:
+                    self.config = json.load(f)
+            if isinstance(config_file,dict):
+                self.config = config_file
             self.scheduler = self.config["scheduler"]
             self.hosts = self.config["hosts"]    
             self.scheduler_port = self.config["scheduler_options"]["port"]
         else:
-            self.scheduler = scheduler
-            self.scheduler_port = scheduler_port
-            self.hosts = hosts
+            raise ValueError("Configuration file or dict missing...")
             
         self.ssh_cluster = ssh_cluster
         self.setup_hosts = []
         self.worker_options = []
-        
-
-        
+    
     def create_cluster(self):
         """Create the SSH cluster with a Scheduler and Worker(s). """
         
         self.check_hosts()
         self.check_kernels()
         
+        self.num_of_workers = 0
+        if isinstance(self.config["connect_options"],dict):
+            self.num_of_workers = len(self.hosts)
+        elif isinstance(self.config["connect_options"],list):
+            for host in self.config["connect_options"]:
+                self.num_of_workers += host["n_workers"]
+            
         print(f"Initializing OctoRay with client ip: {self.scheduler}")
         
         self.cluster = f"tcp://{self.scheduler}:{self.scheduler_port}"
         if self.ssh_cluster:
-            print(self.worker_options)
-            print(len(self.worker_options))
-            print([self.scheduler,*self.hosts])
             #Dask takes the first member in the hosts list as the scheduler so we add it here.            
             self.cluster = OctoSSHCluster(hosts=[self.scheduler,*self.hosts],
                                       connect_options=self.config["connect_options"],
@@ -56,9 +58,8 @@ class Octoray():
         self.client = Client(self.cluster)
         print("Waiting until workers are set up on remote machines...")
         
-        timeout = time.time() + 15
-        #TODO: this condition doesn't make sense if there are multiple workers per host.
-        while len(self.client.scheduler_info()["workers"]) < len(self.hosts):
+        timeout = time.time() + 15        
+        while len(self.client.scheduler_info()["workers"]) < self.num_of_workers:
             time.sleep(0.1)
             if time.time() > timeout:
                 raise TimeoutError("Timed out after 15 seconds... exiting")
@@ -68,8 +69,8 @@ class Octoray():
         print(f"Current amount of workers: {self.num_of_workers}")
         
     def setup_worker_options(self):
-        self.worker_options = [self.config["worker_options"]] * len(self.hosts)
-                
+        if isinstance(self.config["worker_options"],dict):
+            self.worker_options = [self.config["worker_options"]] * len(self.hosts)
         
     def shutdown(self):
         try:
@@ -90,7 +91,6 @@ class Octoray():
             self.kernels.append(kernels[i])
 
         self.check_kernels()
-        
         self.setup_worker_options()
         
         kernels_split = self.split_kernels(self.kernels)
@@ -121,16 +121,13 @@ class Octoray():
         index = 0
         for i,krnl in enumerate(kernels):
             if isinstance(krnl,dict):
-                print(index+1)
                 futures.append(self.client.submit(func,data[i],krnl,index+1,workers=krnl["host"]))
                 index+=1
             elif isinstance(krnl,list):
                 for j,k in enumerate(krnl):
-                    print(index+j+1)
                     futures.append(self.client.submit(func,data[i][j],k,index+j+1,workers=k["host"]))
                 index += len(krnl)
         
-        print(f"len futures: {len(futures)}")
         res = self.client.gather(futures)
         return res
             
@@ -169,7 +166,6 @@ class Octoray():
             kernel["config"]=config
             
         return kernel
-
     
     def split_data(self,dataset,kernels):
         """Split the dataset based on the amount of kernels, the number of instances and the batchsize."""
