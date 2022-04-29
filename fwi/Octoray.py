@@ -57,6 +57,7 @@ class Octoray():
         print("Waiting until workers are set up on remote machines...")
         
         timeout = time.time() + 15
+        #TODO: this condition doesn't make sense if there are multiple workers per host.
         while len(self.client.scheduler_info()["workers"]) < len(self.hosts):
             time.sleep(0.1)
             if time.time() > timeout:
@@ -110,15 +111,10 @@ class Octoray():
         res = self.client.gather(futures)
         return res
     
-    def execute_hybrid(self,setup_func, func,data,kernels,*args, **kwargs):
+    def execute_hybrid(self,func,data,kernels,*args, **kwargs):
         """Example of an execute function with multiple CU's"""        
         f = []
-        
-#         for i in range(len(self.setup_hosts)):
-#             f.append(self.client.submit(setup_func,priority=10,workers=self.setup_hosts[i]))
-      
-#         print(self.client.gather(f))
-        
+                
         if len(data) != len(kernels):
             raise ValueError("data and kernels don't have same dimensions.")
         futures = []
@@ -193,10 +189,11 @@ class Octoray():
                     
         return self.data_split            
     
+    
     def split_kernels(self,kernels):
         """Create a separate kernel for each instance"""
         self.setup_hosts = []
-
+        
         # Need to use slice operator to copy kernels so the insert doesn't mess up the lazy loop iterator.
         for i, krnl in enumerate(kernels[:]):
             if krnl["no_instances"]>1:
@@ -227,6 +224,7 @@ class Octoray():
         """Make sure each kernel is assigned to a valid host"""
         if len(self.hosts) == 0:
             raise ValueError("There are no hosts available, please add at least one host.")
+            
     def check_kernels(self):
         for krnl in self.kernels:
             check = None
