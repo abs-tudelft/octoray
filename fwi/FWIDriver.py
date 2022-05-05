@@ -8,7 +8,7 @@ from FWI.conjugateGradientInversion import ConjugateGradientInversion
 
 
 class FWI():
-    def __init__(self,A,B,C,D,E,F,dotprod,update,config,resolution,gridsize,acceleration=True):
+    def __init__(self,A=None,B=None,C=None,D=None,E=None,F=None,dotprod=None,update=None,config=None,resolution=None,gridsize=None,acceleration=True):
         self.grid = grid2D([config["reservoirTopLeft"]["x"], config["reservoirTopLeft"]["z"]],
                       [config["reservoirBottomRight"]["x"], config["reservoirBottomRight"]["z"]],
                       [config["ngrid"]["x"], config["ngrid"]["z"]])
