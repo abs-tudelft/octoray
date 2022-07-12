@@ -1,0 +1,87 @@
+/*
+
+Xilinx Vitis v2020.2.0 (64-bit) [Major: 2020, Minor: 2]
+SW Build 3064172 on 2020-11-18-06:24:19
+
+Process ID (PID): 28771
+License: Customer
+
+Current time: 	Tue Mar 08 12:23:33 CET 2022
+Time zone: 	Central European Standard Time (Europe/Amsterdam)
+
+OS: CentOS Linux release 7.9.2009 (Core)
+OS Version: 3.10.0-1160.59.1.el7.x86_64
+OS Architecture: amd64
+Available processors (cores): 40
+
+Display: localhost:11.0
+Screen size: 1919x1013
+Available screens: 1
+Available disk space: 40 GB
+
+Java version: 	11.0.2 64-bit
+Java home: 	/opt/apps/xilinx/Vitis/2020.2/tps/lnx64/jre11.0.2
+Java executable location: 	/opt/apps/xilinx/Vitis/2020.2/tps/lnx64/jre11.0.2/bin/java
+Java initial memory (-Xms): 	64 MB
+Java maximum memory (-Xmx):	 1,024 MB
+
+Java library paths: /opt/apps/xilinx/Vitis/2020.2/tps/lnx64/javafx-sdk-11.0.2/lib:/opt/apps/xilinx/Vitis/2020.2/lib/lnx64.o/Default:/opt/apps/xilinx/Vitis/2020.2/lib/lnx64.o:/opt/apps/xilinx/Vitis/2020.2/tps/lnx64/jre11.0.2/lib/:/opt/apps/xilinx/Vitis/2020.2/tps/lnx64/jre11.0.2/lib//server:/opt/apps/xilinx/Vitis/2020.2/lib/lnx64.o:/opt/apps/xilinx/Vitis/2020.2/lib/lnx64.o/Default:/opt/apps/xilinx/Vitis/2020.2/lib/lnx64.o:/opt/apps/xilinx/Vitis/2020.2/tps/lnx64/python-3.8.3/lib:/opt/xilinx/xrt/lib:/opt/apps/devtoolset-11/root/usr/lib64:/opt/apps/devtoolset-11/root/usr/lib:/opt/apps/devtoolset-11/root/usr/lib64/dyninst:/opt/apps/devtoolset-11/root/usr/lib/dyninst:/opt/apps/xilinx/Vitis/2020.2/bin/../lnx64/tools/dot/lib:/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib
+
+Java class paths: /opt/apps/xilinx/Vitis/2020.2/eclipse/lnx64.o//plugins/org.eclipse.equinox.launcher_1.5.700.v20200207-2156.jar
+LD_LIBRARY_PATH: /opt/apps/xilinx/Vitis
+
+User name: 	ldierick
+User home directory: /home/ldierick
+User working directory: /shares/bulk/ldierick/workspace_luc/hls_test/default/output
+User country: 	US
+User language: 	en
+User locale: 	en_US
+
+RDI_BASEROOT: /opt/apps/xilinx/Vitis
+HDI_APPROOT: /opt/apps/xilinx/Vitis/2020.2
+RDI_DATADIR: /opt/apps/xilinx/Vitis/2020.2/data
+RDI_BINDIR: /opt/apps/xilinx/Vitis/2020.2/bin
+
+Vitis preferences directory: /home/ldierick/.Xilinx/Vitis/2020.2/
+Vitis workspace directory: /shares/bulk/ldierick/workspace_luc
+Vitis workspace log file location: /shares/bulk/ldierick/workspace_luc/.metadata/.log
+Engine tmp dir: 	
+
+Xilinx Environment Variables
+----------------------------
+LMOD_FAMILY_XILINX: Vitis
+LMOD_FAMILY_XILINX_VERSION: 2020.2
+XILINXD_LICENSE_FILE: /opt/apps/license/xilinx.lic
+XILINX_DSP: 
+XILINX_HLS: /opt/apps/xilinx/Vitis_HLS/2020.2
+XILINX_PLANAHEAD: /opt/apps/xilinx/Vitis/2020.2
+XILINX_SDK: /opt/apps/xilinx/Vitis/2020.2
+XILINX_VITIS: /opt/apps/xilinx/Vitis/2020.2
+XILINX_VIVADO: /opt/apps/xilinx/Vivado/2020.2
+XILINX_VIVADO_HLS: /opt/apps/xilinx/Vivado/2020.2
+XILINX_XRT: /opt/xilinx/xrt
+_RDI_DONT_SET_XILINX_AS_PATH: True
+
+
+Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
+
+*/
+
+selectTreeTable("conjugateGradientInversion", "hls_test_system > hls_test > src > libraries > inversion", EventType.DOUBLE_CLICK, "Explorer", "ProjectExplorer", "TreeViewer.NavigatorContentServiceContentProvider");
+selectTreeTable("src", "hls_test_system > hls_test > src > libraries > inversion > conjugateGradientInversion", EventType.DOUBLE_CLICK, "Explorer", "ProjectExplorer", "TreeViewer.NavigatorContentServiceContentProvider");
+selectTreeTable("conjugateGradientInversion.cpp", "hls_test_system > hls_test > src > libraries > inversion > conjugateGradientInversion > src", EventType.DOUBLE_CLICK, "Explorer", "ProjectExplorer", "TreeViewer.NavigatorContentServiceContentProvider");
+selectButton("Find", "Find/Replace", "FindReplaceDialog", "Button.FIND");
+selectToolBarButton("Build Emulation-SW for project hls_test", "hls_test", "WorkbenchWindow", "ToolItem.BUILD_EMULATION_SW");
+activateView("Console", "ConsoleView", "CTabItem.CONSOLE");
+selectTreeTable("hls_test_system", "Explorer", "ProjectExplorer", "TreeViewer.NavigatorContentServiceContentProvider");
+selectToolBarButton("Build Emulation-SW for project hls_test_system", "hls_test_system", "WorkbenchWindow", "ToolItem.BUILD_EMULATION_SW");
+selectToolBarMenuButton("Build Emulation-SW for project hls_test_system", "hls_test_system", "WorkbenchWindow", "ToolItem.BUILD_EMULATION_SW");
+selectToolBarButton("Build Emulation-SW for project hls_test_system", "hls_test_system", "WorkbenchWindow", "ToolItem.BUILD_EMULATION_SW");
+activateView("Console", "ConsoleView", "CTabItem.CONSOLE");
+selectToolBarButton("Run", "hls_test", "WorkbenchWindow", "ToolItem.RUN");
+selectButton("Cancel", "Confirm Exit", "MessageDialogWithToggle", "Button.CANCEL");
+selectToolBarMenuButton("Build Emulation-SW for project hls_test", "hls_test", "WorkbenchWindow", "ToolItem.BUILD_EMULATION_SW");
+selectToolBarButton("Build Emulation-SW for project hls_test", "hls_test", "WorkbenchWindow", "ToolItem.BUILD_EMULATION_SW");
+activateView("Explorer", "ProjectExplorer", "CTabItem.EXPLORER");
+selectTreeTable("hls_test_system", EventType.POPUP_TRIGGER_CLICK, "Explorer", "ProjectExplorer", "TreeViewer.NavigatorContentServiceContentProvider");
+activateView("Console", "ConsoleView", "CTabItem.CONSOLE");

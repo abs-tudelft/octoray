@@ -15,7 +15,7 @@ from distributed.deploy.spec import ProcessInterface, SpecCluster
 
 
 
-class MyWorker(Process):
+class OctoWorker(Process):
     """A Remote Dask Worker controled by SSH
     Parameters
     ----------
@@ -310,10 +310,9 @@ def OctoSSHCluster(
             "When specifying a list of remote_python you must provide a "
             "path for each address."
         )
-
     workers = {
         i: {
-            "cls": MyWorker,
+            "cls": OctoWorker,
             "options": {
                 "address": host,
                 "connect_options": connect_options
@@ -331,18 +330,26 @@ def OctoSSHCluster(
         for i, host in enumerate(hosts[1:])
     }
     #the scheduler doesn't need to source the xrt environment or change to the correct dir.
-    connect_options_scheduler = dict(connect_options)
-    for arg in ["xrt","dir"]:
-        if arg in connect_options:
-            del connect_options_scheduler[arg]
+    connect_options_scheduler = []
+    if isinstance(connect_options,list):
+        for c in connect_options:
+            connect_options_scheduler.append(dict(c))
+            for arg in ["xrt","dir"]:
+                if arg in c:
+                    del connect_options_scheduler[-1][arg]
+    else:
+        connect_options_scheduler = dict(connect_options)
+        for arg in ["xrt","dir"]:
+                if arg in connect_options:
+                    del connect_options_scheduler[arg]
         
     scheduler = {
         "cls": Scheduler,
         "options": {
             "address": hosts[0],
             "connect_options": connect_options_scheduler
-            if isinstance(connect_options, dict)
-            else connect_options[0],
+            if isinstance(connect_options_scheduler, dict)
+            else connect_options_scheduler[0],
             "kwargs": scheduler_options,
             "remote_python": remote_python[0]
             if isinstance(remote_python, list)

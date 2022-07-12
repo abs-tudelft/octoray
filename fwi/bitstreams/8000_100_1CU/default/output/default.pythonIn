@@ -1,0 +1,13 @@
+This run was parametrized as follows:
+nxt   = 10
+nzt   = 10
+nxt_original   = 10
+nzt_original   = 10
+Timing:
+Starting at 1656273100726983602
+Finished at 1656273101628505000
+CPU time: 0.690117
+
+Others:
+Virtual memory: 591824
+Physical memory: 96712

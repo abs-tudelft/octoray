@@ -1,0 +1,13 @@
+{
+    "PMLWidthFactor": {
+        "x": 0.0,
+	"z": 0.0
+    },
+    "SourceParameter": {
+	"r": 4,
+	"beta": 6.31
+    },
+    "CostFunction" : "leastSquares",
+    "boundaryConditionType": "SecondOrderABC"
+}
+

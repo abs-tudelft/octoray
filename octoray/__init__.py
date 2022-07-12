@@ -1,4 +1,1 @@
-from octoray.Octoray import *
-from octoray.SSHCluster import * 
-
- 
+from .octoray import Octoray

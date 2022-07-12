@@ -1,0 +1,23 @@
+Tue Mar  8 12:23:31 2022: Server was asked to start on port: '33227'
+Tue Mar  8 12:23:31 2022: Server is using token UUID: '60fa901a-c133-44e1-96d1-d5e701de85c5'
+Tue Mar  8 12:23:31 2022: Attempting to start server on port '33227'
+Tue Mar  8 12:23:31 2022: XRC main fifo: created main fifo '/tmp/xrcmain60fa901a-c133-44e1-96d1-d5e701de85c5', fd read = 11
+Tue Mar  8 12:23:31 2022: Running Rule Check Server
+Tue Mar  8 12:23:31 2022: Version 1.6.1
+Tue Mar  8 12:23:32 2022: Rule Check Server: Accepted socket connection from client
+Tue Mar  8 12:23:32 2022: EXCHANGE_TOKEN received, server token: 60fa901a-c133-44e1-96d1-d5e701de85c5, passed token: 60fa901a-c133-44e1-96d1-d5e701de85c5
+Tue Mar  8 12:25:26 2022: SESSION_MGR: creating session with session uuid: '45c90538-6c19-4d2d-9d1d-e24b3970cfbc' and name 'Emulation-SW'
+Tue Mar  8 12:25:54 2022: SESSION_MGR: creating session with session uuid: 'e47679bc-718c-430c-ac3c-9bee256c67d7' and name 'Emulation-SW'
+Tue Mar  8 12:26:01 2022: SESSION_MGR: creating session with session uuid: '89668995-4147-4265-a826-56a39c625acc' and name 'Emulation-SW'
+Tue Mar  8 12:26:06 2022: SESSION_MGR: creating session with session uuid: '54a67ce4-a6a6-4fd5-bde8-fd138ed02d47' and name 'Emulation-SW'
+Tue Mar  8 12:26:07 2022: SESSION_MGR: creating session with session uuid: '0b487bd0-e3e4-4779-9a06-8db5bdad6f80' and name 'Emulation-SW'
+Tue Mar  8 13:23:31 2022: Rule Check Server timeout; shutting down.
+Tue Mar  8 13:23:31 2022: Rule Check Server: do_await_stop
+Tue Mar  8 13:23:31 2022: Rule Check Server: stopping mainFifo_
+Tue Mar  8 13:23:31 2022: On server, in MainFifo::stop() 
+Tue Mar  8 13:23:31 2022: XRC main fifo: do_read error code: Operation canceled
+XRC main fifo: bytes_transferred: 0
+Tue Mar  8 13:23:31 2022: SERVER: destructor for server bound to port 33227
+Tue Mar  8 13:23:31 2022: XRC main fifo: Good unlink of /tmp/xrcmain60fa901a-c133-44e1-96d1-d5e701de85c5
+Tue Mar  8 13:23:31 2022: Server exiting with status 0.
+Tue Mar  8 13:23:31 2022: Closing log file.

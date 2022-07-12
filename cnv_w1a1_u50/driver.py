@@ -13,7 +13,8 @@ from finn.core.datatype import DataType
 from pynq.ps import Clocks
 
 class FINNAccelDriver():
-    def __init__(self, N, bitfile, platform="alveo", device_name="xilinx_u50_gen3x16_xdma_201920_3"):
+    def __init__(self, N,bitfile, platform="alveo", device_name="xilinx_u50_gen3x16_xdma_201920_3",kernel=None):
+        
         """Instantiate the FINN accelerator driver.
         Gets batchsize (N) as integer and path to bitfile as string."""
         self.platform = platform
@@ -32,14 +33,14 @@ class FINNAccelDriver():
         # load bitfile and set up accelerator
         self.device = [i for i in Device.devices if i.name == device_name][0]
         Device.active_device = self.device
-        self.ol = Overlay(bitfile)
+        self.ol = Overlay(bitfile,download=False)
         # neuron folding factor of output = iterations per sample
         self.itersPerSample = self.oshape_packed[-2]
         # clock frequency as specified by user
         self.fclk_mhz = 100.0
         if self.platform == "alveo":
-            self.idma = self.ol.idma0
-            self.odma = self.ol.odma0
+            self.idma = getattr(self.ol,"idma"+str(kernel["instance_id"]-1))
+            self.odma = getattr(self.ol,"odma"+str(kernel["instance_id"]-1))
         elif self.platform == "zynq-iodma":
             self.idma = self.ol.idma0
             self.odma = self.ol.odma0
@@ -51,8 +52,8 @@ class FINNAccelDriver():
 
         # allocate a PYNQ buffer for the packed input and buffer
         if self.platform == "alveo":
-            self.ibuf_packed_device = allocate(shape=self.ishape_packed, dtype=np.uint8)
-            self.obuf_packed_device = allocate(shape=self.oshape_packed, dtype=np.uint8)
+            self.ibuf_packed_device = allocate(shape=self.ishape_packed, dtype=np.uint8, target=getattr(self.ol,kernel["functions"][0]["idma"+str(kernel["instance_id"]-1)][0]))
+            self.obuf_packed_device = allocate(shape=self.oshape_packed, dtype=np.uint8, target=getattr(self.ol,kernel["functions"][1]["odma"+str(kernel["instance_id"]-1)][0]))
         else:
             self.ibuf_packed_device = allocate(shape=self.ishape_packed, dtype=np.uint8, cacheable=True)
             self.obuf_packed_device = allocate(shape=self.oshape_packed, dtype=np.uint8, cacheable=True)
@@ -113,13 +114,15 @@ class FINNAccelDriver():
             self.odma.write(0x00, 1)
             # wait until output IODMA is finished
             status = self.odma.read(0x00)
+            
             while status & 0x2 == 0:
                 status = self.odma.read(0x00)
         elif self.platform == "alveo":
             idma_handle = self.idma.start_sw(self.ibuf_packed_device, self.N)
             odma_handle = self.odma.start_sw(self.obuf_packed_device, self.N)
             odma_handle.wait()
-
+            self.ibuf_packed_device.freebuffer()
+            self.obuf_packed_device.freebuffer()
 
 
 if __name__ == "__main__":
