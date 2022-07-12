@@ -3,3 +3,9 @@ __pycache__
 dask-worker-space
 
 env/*
+dist/*
+build/*
+
+build
+dist
+
