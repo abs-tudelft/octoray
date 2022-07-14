@@ -123,6 +123,7 @@ class FINNAccelDriver():
             odma_handle.wait()
             self.ibuf_packed_device.freebuffer()
             self.obuf_packed_device.freebuffer()
+            self.ol.free()
 
 
 if __name__ == "__main__":

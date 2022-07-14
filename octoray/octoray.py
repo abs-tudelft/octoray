@@ -48,7 +48,7 @@ class Octoray():
         """Create the SSH cluster with a Scheduler and Worker(s). """
         
         self.check_hosts()         
-        self.setup_worker_options()
+        self._setup_worker_options()
        
         print(f"Initializing OctoRay with client ip: {self.scheduler}")
         
@@ -56,12 +56,14 @@ class Octoray():
         if self.ssh_cluster:
             #Dask takes the first member in the hosts list as the scheduler so we add it here.            
             
-            self.cluster = OctoSSHCluster(hosts=[self.scheduler,*self.hosts],
+            self.octo_cluster = OctoSSHCluster(hosts=[self.scheduler,*self.hosts],
                                       connect_options=self.config["connect_options"],
                                       worker_options=self.worker_options,
                                       worker_class=self.config["worker_class"],
                                       scheduler_options=self.config["scheduler_options"]
                                      )
+            self.cluster = self.octo_cluster.create_cluster()
+
 
         self.client = Client(self.cluster)
         print("Waiting until workers are set up on remote machines...")
@@ -71,12 +73,12 @@ class Octoray():
             time.sleep(0.1)
             if time.time() > timeout:
                 raise TimeoutError("Timed out after 15 seconds... exiting")
-        
+                        
         self.num_of_workers = len(self.client.scheduler_info()["workers"])
         
         print(f"Current amount of workers: {self.num_of_workers}")
         
-    def setup_worker_options(self):
+    def _setup_worker_options(self):
         self.num_of_workers = 0
         
         if isinstance(self.config["connect_options"],dict) and isinstance(self.worker_options,dict):
@@ -88,10 +90,7 @@ class Octoray():
                     new_hosts.append(self.hosts[i])
                 
             self.hosts = new_hosts    
-            self.worker_options["n_workers"] = 1
-            
-            print(self.hosts)
-            
+            self.worker_options["n_workers"] = 1            
             
         elif isinstance(self.config["connect_options"],list):
             h = len(self.hosts)
@@ -169,13 +168,11 @@ class Octoray():
         """WARNING: this functions forcefully kills processes on the scheduler port on each host machine.
         only use this function if your SSH Server does not support the "signal" channel request."""
         temp = [self.scheduler,*self.hosts]
-        for h in temp[::-1]: 
+        for h in temp: 
             async with asyncssh.connect(h,22) as conn:
                 res = await conn.run("lsof -n -i | grep "+str(self.scheduler_port) +" | awk '{system(\"kill \" $2)}'",check=True)
-#                 res = await conn.run("pgrep -f dask | xargs kill",check=True)
-                print(res.stdout,end='')
 
-    def create_kernel(self, path:str, no_instances:int=1, batch_size:int=0, func_specs:list=[],config=None,device:str=None):
+    def create_kernel(self, path:str, no_instances:int=1, batch_size:int=0, func_specs:list=[],config=None,host:str=None,device:str=None):
         """Creates a dictionary that represents a kernel.
         @param device: The devices name of the FPGA
         @param path: The path to the bitsream
@@ -187,7 +184,7 @@ class Octoray():
             is represented as: [{"square_numbers":[HBM0,HBM1]}]
         @param host: We assign each kernel to a host, chronologically by default.
         @param config: If the python driver requires it, a configuration file or variable can be added.
-        """ 
+        """
         kernel = {
             "device":device,
             "path_to_bitstream":path,
@@ -195,11 +192,11 @@ class Octoray():
             "instance_id":1,
             "batch_size":batch_size,
             "functions":func_specs,
-            "host":None,
-            }    
+            "host":host,
+            }
         if config:
             kernel["config"]=config
-            
+
         return kernel
     
     def split_data(self,dataset,kernels):
@@ -246,6 +243,9 @@ class Octoray():
             krnl["no_instances"] = 1
             
         self.kernels = kernels
+        
+        self.check_kernels()
+
         return self.kernels
     
     def check_hosts(self):
@@ -254,11 +254,6 @@ class Octoray():
             raise ValueError("There are no hosts available, please add at least one host.")
             
     def check_kernels(self):
-        for krnl in self.kernels:
-            check = None
-            if isinstance(krnl,dict):
-                check = krnl["host"]
-            elif isinstance(krnl,list):
-                check = krnl[0]["host"] 
-            if check not in self.hosts:
-                raise ValueError(f"There is no valid host assigned to kernel {krnl}. Make sure the amount of hosts and kernels added to Octoray match.")
+        if len(self.kernels) != len(self.hosts):
+            raise ValueError(f"The number of workers specified in the kernels ({len(self.kernels)}) does not match the number of workers specified in the cluster configuration ({len(self.hosts)}).")
+    

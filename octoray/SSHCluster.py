@@ -15,7 +15,7 @@ from distributed.deploy.spec import ProcessInterface, SpecCluster
 
 
 
-class OctoWorker(Process):
+class MyWorker(Process):
     """A Remote Dask Worker controled by SSH
     Parameters
     ----------
@@ -174,6 +174,7 @@ class OctoWorker(Process):
                 started_workers += 1
         logger.debug("%s", line)
         await super().start()
+        
 
 old_cluster_kwargs = {
     "scheduler_addr",
@@ -194,16 +195,8 @@ old_cluster_kwargs = {
     "remote_dask_worker",
 }
 
-def OctoSSHCluster(
-    hosts: list[str] | None = None,
-    connect_options: dict | list[dict] = {},
-    worker_options: dict = {},
-    scheduler_options: dict = {},
-    worker_module: str = "deprecated",
-    worker_class: str = "distributed.Nanny",
-    remote_python: str | list[str] | None = None,
-    **kwargs,
-):
+class OctoSSHCluster():  
+   
     """Deploy a Dask cluster using SSH
     The SSHCluster function deploys a Dask Scheduler and Workers for you on a
     set of machine addresses that you provide.  The first address will be used
@@ -278,83 +271,107 @@ def OctoSSHCluster(
     dask.distributed.Worker
     asyncssh.connect
     """
-    if worker_module != "deprecated":
-        raise ValueError(
-            "worker_module has been deprecated in favor of worker_class. "
-            "Please specify a Python class rather than a CLI module."
-        )
+    
+    
+    def __init__(self,
+        hosts: list[str] | None = None,
+        connect_options: dict | list[dict] = {},
+        worker_options: dict = {},
+        scheduler_options: dict = {},
+        worker_module: str = "deprecated",
+        worker_class: str = "distributed.Nanny",
+        remote_python: str | list[str] | None = None,
+        **kwargs,
+    ):
+        self.hosts = hosts
+        self.connect_options = connect_options
+        self.worker_options = worker_options
+        self.scheduler_options = scheduler_options
+        self.worker_module = worker_module
+        self.worker_class = worker_class
+        self.remote_python = remote_python
+        self.kwargs = kwargs
+        
+    def create_cluster(self):
+        if self.worker_module != "deprecated":
+            raise ValueError(
+                "worker_module has been deprecated in favor of worker_class. "
+                "Please specify a Python class rather than a CLI module."
+            )
 
-    if set(kwargs) & old_cluster_kwargs:
-        from distributed.deploy.old_ssh import SSHCluster as OldSSHCluster
+        if set(self.kwargs) & old_cluster_kwargs:
+            from distributed.deploy.old_ssh import SSHCluster as OldSSHCluster
 
-        warnings.warn(
-            "Note that the SSHCluster API has been replaced.  "
-            "We're routing you to the older implementation.  "
-            "This will be removed in the future"
-        )
-        kwargs.setdefault("worker_addrs", hosts)
-        return OldSSHCluster(**kwargs)
+            warnings.warn(
+                "Note that the SSHCluster API has been replaced.  "
+                "We're routing you to the older implementation.  "
+                "This will be removed in the future"
+            )
+            self.kwargs.setdefault("worker_addrs", self.hosts)
+            return OldSSHCluster(**self.kwargs)
 
-    if not hosts:
-        raise ValueError(
-            f"`hosts` must be a non empty list, value {repr(hosts)!r} found."
-        )
-    if isinstance(connect_options, list) and len(connect_options) != len(hosts):
-        raise RuntimeError(
-            "When specifying a list of connect_options you must provide a "
-            "dictionary for each address."
-        )
+        if not self.hosts:
+            raise ValueError(
+                f"`hosts` must be a non empty list, value {repr(self.hosts)!r} found."
+            )
+        if isinstance(self.connect_options, list) and len(self.connect_options) != len(self.hosts):
+            raise RuntimeError(
+                "When specifying a list of connect_options you must provide a "
+                "dictionary for each address."
+            )
 
-    if isinstance(remote_python, list) and len(remote_python) != len(hosts):
-        raise RuntimeError(
-            "When specifying a list of remote_python you must provide a "
-            "path for each address."
-        )
-    workers = {
-        i: {
-            "cls": OctoWorker,
+        if isinstance(self.remote_python, list) and len(self.remote_python) != len(self.hosts):
+            raise RuntimeError(
+                "When specifying a list of remote_python you must provide a "
+                "path for each address."
+            )
+        self.workers = {
+            i: {
+                "cls": MyWorker,
+                "options": {
+                    "address": host,
+                    "connect_options": self.connect_options
+                    if isinstance(self.connect_options, dict)
+                    else self.connect_options[i],
+                    "kwargs": self.worker_options
+                    if isinstance(self.worker_options,dict)
+                    else self.worker_options[i],
+                    "worker_class": self.worker_class,
+                    "remote_python": self.remote_python[i]
+                    if isinstance(self.remote_python, list)
+                    else self.remote_python,
+                },
+            }
+            for i, host in enumerate(self.hosts[1:])
+        }
+        #the scheduler doesn't need to source the xrt environment or change to the correct dir.
+        connect_options_scheduler = []
+        if isinstance(self.connect_options,list):
+            for c in self.connect_options:
+                connect_options_scheduler.append(dict(c))
+                for arg in ["xrt","dir"]:
+                    if arg in c:
+                        del connect_options_scheduler[-1][arg]
+        else:
+            connect_options_scheduler = dict(self.connect_options)
+            for arg in ["xrt","dir"]:
+                    if arg in self.connect_options:
+                        del connect_options_scheduler[arg]
+
+        self.scheduler = {
+            "cls": Scheduler,
             "options": {
-                "address": host,
-                "connect_options": connect_options
-                if isinstance(connect_options, dict)
-                else connect_options[i],
-                "kwargs": worker_options
-                if isinstance(worker_options,dict)
-                else worker_options[i],
-                "worker_class": worker_class,
-                "remote_python": remote_python[i]
-                if isinstance(remote_python, list)
-                else remote_python,
+                "address": self.hosts[0],
+                "connect_options": connect_options_scheduler
+                if isinstance(connect_options_scheduler, dict)
+                else connect_options_scheduler[0],
+                "kwargs": self.scheduler_options,
+                "remote_python": self.remote_python[0]
+                if isinstance(self.remote_python, list)
+                else self.remote_python,
             },
         }
-        for i, host in enumerate(hosts[1:])
-    }
-    #the scheduler doesn't need to source the xrt environment or change to the correct dir.
-    connect_options_scheduler = []
-    if isinstance(connect_options,list):
-        for c in connect_options:
-            connect_options_scheduler.append(dict(c))
-            for arg in ["xrt","dir"]:
-                if arg in c:
-                    del connect_options_scheduler[-1][arg]
-    else:
-        connect_options_scheduler = dict(connect_options)
-        for arg in ["xrt","dir"]:
-                if arg in connect_options:
-                    del connect_options_scheduler[arg]
         
-    scheduler = {
-        "cls": Scheduler,
-        "options": {
-            "address": hosts[0],
-            "connect_options": connect_options_scheduler
-            if isinstance(connect_options_scheduler, dict)
-            else connect_options_scheduler[0],
-            "kwargs": scheduler_options,
-            "remote_python": remote_python[0]
-            if isinstance(remote_python, list)
-            else remote_python,
-        },
-    }
-    return SpecCluster(workers, scheduler, name="SSHCluster", **kwargs)
+        return SpecCluster(self.workers, self.scheduler, name="SSHCluster", **self.kwargs)
+    
 
