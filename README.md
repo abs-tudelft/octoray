@@ -1,7 +1,6 @@
 # OctoRay
 
-In this repo, we demonstrate 2 examples of using Dask (https://github.com/dask/dask) to parallelize data analytics on multiple U50 FPGAs.
-
+OctoRay is a framework that enables users to scale FPGA accelerated applications on multiple FPGAs.
 
 ## General architecture:
 
@@ -29,7 +28,7 @@ Assuming a Dask cluster is already set up, the steps involved to parallelize any
 3. Since we use popular Python libraries (Dask, Numpy, etc.), this makes the system hardware agnostic. As long as we can compile an accelerator for the available hardware platform, the system can be deployed on that platform. We have run this setup on various hardware platforms such as Pynq-Z1 boards, AWS F1 instances, Nimbix cloud instances, and our in-house Alveo servers.
 
 
-## Setting up  a Dask cluster
+## Setting up  a Dask cluster manually
 This consists of two steps:
 1. Starting a `dask scheduler`. This is a Python process which is responsible for scheduling tasks on the worker and maintaining the application state.
 
@@ -37,9 +36,9 @@ This consists of two steps:
 
 This emits an IP address, which can be used to register Dask clients and workers.
 
-2. Starting one or more `dask workers`. These are Python processes that perform the actual computation. These can be present on the same machine as the scheduler or remote ones. We can spawn as many workers as the number of available FPGAs
+2. Starting one or more `dask workers`. These are Python processes that perform the actual computation. These can be present on the same machine as the scheduler or remote ones. The number of workers per FPGA dependson the number of instances of the application that are present in the bitstream.
 
-```$ dask-worker <IP_OF_SCHEDULER> --nthreads 1 --memory-limit 0 --no-nanny```
+```$ dask-worker <IP_OF_SCHEDULER> --n_workers <NUMBER_OF_INSTANCES> --nthreads 1 --memory-limit 0 --no-nanny```
 
 ## Examples
 
