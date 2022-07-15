@@ -220,11 +220,12 @@ class Octoray():
     
     def split_kernels(self,kernels):
         """Create a separate kernel for each instance"""
-        
+        total_kernels = 0
         # Need to use slice operator to copy kernels so the insert doesn't mess up the lazy loop iterator.
         if not isinstance(kernels,list):
             kernels = [kernels]
         for i, krnl in enumerate(kernels[:]):
+            total_kernels += krnl["no_instances"]
             if krnl["no_instances"]>1:
                 group = []
                                 
@@ -244,7 +245,7 @@ class Octoray():
             
         self.kernels = kernels
         
-        self.check_kernels()
+        self.check_kernels(total_kernels)
 
         return self.kernels
     
@@ -253,7 +254,7 @@ class Octoray():
         if len(self.hosts) == 0:
             raise ValueError("There are no hosts available, please add at least one host.")
             
-    def check_kernels(self):
-        if len(self.kernels) != len(self.hosts):
-            raise ValueError(f"The number of workers specified in the kernels ({len(self.kernels)}) does not match the number of workers specified in the cluster configuration ({len(self.hosts)}).")
+    def check_kernels(self,total_kernels):
+        if total_kernels != len(self.hosts):
+            raise ValueError(f"The number of workers specified in the kernels ({total_kernels}) does not match the number of workers specified in the cluster configuration ({len(self.hosts)}).")
     
