@@ -1,9 +1,0 @@
-README.md
-setup.py
-octoray/SSHCluster.py
-octoray/__init__.py
-octoray/octoray.py
-octoray.egg-info/PKG-INFO
-octoray.egg-info/SOURCES.txt
-octoray.egg-info/dependency_links.txt
-octoray.egg-info/top_level.txt
