@@ -27,7 +27,7 @@ Assuming a Dask cluster is already set up, the steps involved to parallelize any
 
 3. Since we use popular Python libraries (Dask, Numpy, etc.), this makes the system hardware agnostic. As long as we can compile an accelerator for the available hardware platform, the system can be deployed on that platform. We have run this setup on various hardware platforms such as Pynq-Z1 boards, AWS F1 instances, Nimbix cloud instances, and our in-house Alveo servers.
 
-### Installation
+## Installation
 
 Create a virtual environment 
 
@@ -42,7 +42,7 @@ Install octoray (this takes several minutes)
 `pip install -v -e . `
 `python3 setup.py install`
 
-### Getting started
+## Getting started
 
 OctoRay is build on two fundamental concepts: the cluster configuration and OctoRay kernels. The cluster configuration consists of a dictionary that is used to specify how the Dask distributed cluster should be deployed. OctoRay kernels are structures that consist of all the specifications necessary to deploy an application on the cluster. The example notebooks provide explanations on how to use the cluster configuration and OctoRay kernels to scale applications. 
 
