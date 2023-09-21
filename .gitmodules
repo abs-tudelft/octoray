@@ -1,0 +1,3 @@
+[submodule "fwi/FWI"]
+	path = fwi/FWI
+	url = https://github.com/Luc-Dierick/FWI-python.git

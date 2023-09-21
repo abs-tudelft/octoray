@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0",
+"pillow==7.1.0",
+"bitstring==3.1.7",
+"bokeh==2.3.0",
+"cffi==1.14.5",
+"dask[distributed]==2022.2.0",
+"click<=8",
+"jupyter==1.0.0",
+"notebook==6.4.10",
+"matplotlib==3.3.4",
+"numpy",
+"pynq==2.7.0",
+"asyncssh==2.10.1",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "octoray"
+version = "0.0.1"
+authors = [
+  { name="Shashank Aggarwal"},
+  { name="Jakoba Petri-König"),
+  { name="Luc Dierick", email="ladierick@gmail.com"},
+]
+description = "OctoRay is a framework that enables users to scale applications on FPGA enabled cluster by using Dask distributed and pynq."
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD-3-Clause License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/abs-tudelft/octoray"

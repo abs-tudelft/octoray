@@ -1,1 +1,11 @@
 __pycache__
+.ipynb_checkpoints
+dask-worker-space
+
+env/*
+dist/*
+build/*
+
+build
+dist
+octoray.egg-info
